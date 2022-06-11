@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
-import seaborn as sns
 
 
 def get_data(path):
@@ -42,10 +41,21 @@ def algo_approximation(data, rand_vectors):
         difference = [math.dist(input_data, rand_point) for rand_point in rand_vectors]
         closet_rand_point = rand_vectors[np.argmin(difference)]
         curr_data = np.concatenate((input_data.reshape(1, 2), rand_vectors))
+        dist = np.min(difference)
         # plot_data(curr_data)
-
         # approximate input_vector to the "closest" vector
-        pass
+        vector_1 = closet_rand_point - input_data
+        vector_1 = vector_1 / np.linalg.norm(vector_1)
+        new_rand_point = closet_rand_point - vector_1*(1/10)*dist
+        new_rand_point_2 = closet_rand_point - vector_1*(2/10)*dist
+        new_rand_point_3 = closet_rand_point - vector_1*(3/10)*dist
+        plt.scatter(input_data[0], input_data[1], c='blue')
+        plt.scatter(closet_rand_point[0], closet_rand_point[1], c='red')
+        plt.scatter(new_rand_point[0], new_rand_point[1], c='green')
+        plt.scatter(new_rand_point_2[0], new_rand_point_2[1], c='green')
+        plt.scatter(new_rand_point_3[0], new_rand_point_3[1], c='green')
+        plt.show()
+        plt.clf()
 
 
 def make_as_points(input_data, rand_vectors):
