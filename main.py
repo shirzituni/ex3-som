@@ -2,6 +2,7 @@ import math
 import random
 import sys
 
+import numpy
 import numpy as np
 import pandas as pd
 from sklearn.manifold import TSNE
@@ -18,6 +19,8 @@ grid_size = grid_rows * grid_cols
 def get_data(path):
     # get data from csv file
     data = pd.read_csv(filepath_or_buffer=path, header=None).values
+    data2 = pd.read_csv('Elec_24.csv')
+    cities_list = data2['Municipality'].tolist()
     # convert str to int
     data[1:, 1:] = data[1:, 1:].astype(np.uint8)
     # create 61 random vectors with same dim=15
@@ -27,7 +30,7 @@ def get_data(path):
         random_vectors[:, i] = [
             random.randint(np.min(data[1:, i + 1].astype(int)), np.max(data[1:, i + 1].astype(int)))
             for x in range(61)]
-    return data, random_vectors
+    return data, random_vectors, cities_list
 
 '''
 def draw_reg_poly(surface, color, vertex_count, radius, position, width=0):
@@ -102,35 +105,86 @@ def paint():
 
 
 def calculate_euclidean_dist(vector1, vector2):
-    dist = distance.cdist(vector1, vector2, 'euclidean')
+    dist = numpy.linalg.norm(vector2-vector1)
     return dist
 
 
 # This function is for clustering groups.
 # The aim is that the vector in size 196 will be in size 61.
-def cluster_groups(vectors):
-    origin = np.ndarray.zeros(shape=(1, 15), dtype=float, order='C')
+def cluster_groups_to_distances(vectors):
     max_dist = 0
-    min_dist = type(sys.maxint)
-    for vector in vectors:
-        euclidean_dist = calculate_euclidean_dist(vector, origin)
+    origin = np.zeros(shape=(1, 2), dtype=float, order='C')
+    min_dist = float('inf')
+    dict_vec_euclidean_dist = dict()
+
+    # calculate the min and the max distance from the origin (0,0)
+    for i in range(0, 196):
+        euclidean_dist = calculate_euclidean_dist(vectors[i], origin)
+        # dict_vec_euclidean_dist[vectors[i]] = euclidean_dist
+        dict_vec_euclidean_dist[i] = euclidean_dist
         if euclidean_dist > max_dist:
             max_dist = euclidean_dist
         if euclidean_dist < min_dist:
             min_dist = euclidean_dist
-
+    print(min_dist)
+    print(max_dist)
     dist_between_max_min = max_dist - min_dist
+    print(dist_between_max_min)
+    # cluster each vector by his distance to the origin
+    offset = dist_between_max_min / 61
+
+    distances = [(s, e, [])  # create couples of start and end
+                 for s, e in zip(  # for each couple
+                    [min_dist+x*((max_dist-min_dist)/61) for x in range(0, 61)],  # start
+                    [min_dist+(x+1)*((max_dist-min_dist)/61) for x in range(0, 61)]  # end
+                )]
+
+    for city_idx, city_dist in dict_vec_euclidean_dist.items():
+        for section in distances:
+            if section[0] <= city_dist <= section[1]:
+                section[2].append(city_idx)
+                break
+
+    # Verify all were mapped
+    count = 0
+    for section in distances:
+        count += len(section[2])
+
+    assert count == 196
+
+    groups = [distances[i][2] for i in range(0, len(distances))]
+    return groups
+    '''
+    map_vector_to_group = dict()
+    for k in range(0,60):
+        for j in range (0,195):
+            if (k-1) * offset < dict_vec_euclidean_dist.get(k-1) < k * offset:
+                map_vector_to_group[k].append(dict_vec_euclidean_dist[j-1])
+            #if euclidean_dist
+    '''
+
+
+def cluster_groups_to_hexagons(groups, centers_list):
+    return list(zip(groups, centers_list.tolist()[:61]))
+
+#todo: fix the number of hexagons
+
 
 def map_each_vector_to_hexagon(vector_as_points, vector_hexagon_centers):
     map_of_vector_to_hexagon = np.column_stack((vector_hexagon_centers, vector_as_points))
     return map_of_vector_to_hexagon
 
+
 if __name__ == '__main__':
-    data, random_vectors = get_data('Elec_24.csv')
+    data, random_vectors, cities_list = get_data('Elec_24.csv')
     data_as_points, rand_vec_as_points = make_as_points(data, random_vectors)
-    map_vector_hexagon = map_each_vector_to_hexagon(data_as_points, paint())
-    print(map_vector_hexagon)
+    hexagons_centers = paint()
+    #map_vector_hexagon = map_each_vector_to_hexagon(data_as_points, paint())
+    #print(map_vector_hexagon)
     algo_approximation(data_as_points, rand_vec_as_points)
-    cluster_groups(rand_vec_as_points)
+
+    vector_to_group = cluster_groups_to_distances(data_as_points)
+    group_to_hexagon = cluster_groups_to_hexagons(vector_to_group, hexagons_centers)
+    a= 9
     plt.show()
 
