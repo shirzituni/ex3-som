@@ -85,7 +85,7 @@ def make_as_points(input_data, rand_vectors):
 
 def paint():
     colors = np.zeros([grid_size, 3])
-    hex_centers, grid = create_hex_grid(nx=grid_rows, ny=grid_cols, do_plot=False)
+    hex_centers, grid = create_hex_grid(n=100, crop_circ=4)
     x_hex_coords = hex_centers[:, 0]
     y_hex_coords = hex_centers[:, 1]
 
@@ -165,7 +165,7 @@ def cluster_groups_to_distances(vectors):
 
 
 def cluster_groups_to_hexagons(groups, centers_list):
-    return list(zip(groups, centers_list.tolist()[:61]))
+    return list(zip(centers_list.tolist(), groups))
 
 #todo: fix the number of hexagons
 
