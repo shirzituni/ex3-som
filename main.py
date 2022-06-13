@@ -83,17 +83,18 @@ def make_as_points(input_data, rand_vectors):
     rand_vector_as_points = tsne_results[196:]
     return input_data_as_points, rand_vector_as_points
 
+
 def paint():
-    colors = np.zeros([grid_size, 3])
-    hex_centers, grid = create_hex_grid(n=100, crop_circ=4)
+    hex_centers, _ = create_hex_grid(n=100, crop_circ=4)
+    return hex_centers
+
+
+def color(hex_centers, groups):
     x_hex_coords = hex_centers[:, 0]
     y_hex_coords = hex_centers[:, 1]
-
-    # keys = list(range(0, grid_size))  # Replace by Municipality column from CSV
-    # grid_dict = dict(zip(keys), colors))
-
-    for i in range(0, grid_size):
-        colors[i] = np.array([val / 255 for val in [255 - i, 255 - 2 * i, 0]])  # RGB 0-1
+    colors = np.zeros([grid_size, 3])
+    for i in range(0, grid_size - 3):
+        colors[i] = np.array([groups[i][1], 0.8, 0])  # RGB 0-1
 
     plot_single_lattice_custom_colors(x_hex_coords, y_hex_coords,
                                       face_color=colors,
@@ -101,7 +102,38 @@ def paint():
                                       min_diam=0.9,
                                       plotting_gap=0.05,
                                       rotate_deg=0)
-    return hex_centers
+
+
+def calculate_color(groups):
+    data = pd.read_csv('Elec_24.csv')
+    merez_votes_list = data['Merez'].tolist()
+    # min and max
+    # normalize color by the votes
+    # 0 - 255
+    # min_val - max_val
+    # min_val ==> 0
+    # max_val ==> 255
+
+    # min_val = 1 ==> 0
+    # max_val = 100 ==> 255
+    # 50 ==> (50-1)/100 * 255
+
+    min_val = min(merez_votes_list)
+    max_val = max(merez_votes_list)
+    max_intensity = math.e + np.log((1*max_val - min_val)/max_val + 1)
+
+    for i in range(len(merez_votes_list)):
+        intensity = math.e + np.log(((1*merez_votes_list[i]) - min_val)/max_val + 1)
+        for j in range(len(groups)):
+            if i in groups[j][0]:
+                groups[j][1] += intensity/len(groups[j][0])
+                break
+
+    for j in range(len(groups)):
+        groups[j][1] /= max_intensity
+
+    a = 5
+
 
 
 def calculate_euclidean_dist(vector1, vector2):
@@ -152,7 +184,8 @@ def cluster_groups_to_distances(vectors):
 
     assert count == 196
 
-    groups = [distances[i][2] for i in range(0, len(distances))]
+    groups = [[distances[i][2], 0] for i in range(0, len(distances))]
+    calculate_color(groups)
     return groups
     '''
     map_vector_to_group = dict()
@@ -183,8 +216,8 @@ if __name__ == '__main__':
     #print(map_vector_hexagon)
     algo_approximation(data_as_points, rand_vec_as_points)
 
-    vector_to_group = cluster_groups_to_distances(data_as_points)
-    group_to_hexagon = cluster_groups_to_hexagons(vector_to_group, hexagons_centers)
-    a= 9
+    vector_to_groups = cluster_groups_to_distances(data_as_points)
+    color(hexagons_centers, vector_to_groups)
+    group_to_hexagon = cluster_groups_to_hexagons(vector_to_groups, hexagons_centers)
     plt.show()
 
