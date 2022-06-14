@@ -45,6 +45,42 @@ class Hexagon:
 
         return neighbors_list_ring_1, neighbors_list_ring_2, neighbors_list_ring_3
 
+    #def find_neighbors_rings(self):
+
+
+    def rotate_axes_60_degree(self):
+        all_rows_mapping = []
+        row_1 = []
+        #for i in range(0, 5 + i)
+        for j in range(0, 5):
+            for i in range(0 - j, 5):
+                all_rows_mapping.append((i, -4 + j))
+
+        for k in range(1, 5):
+            for m in range(-4, 5 - k):
+                all_rows_mapping.append((m, k))
+
+        map_center_to_rotate_axes = (list(zip(self.centers_list, all_rows_mapping)))
+
+        row_2 = []
+        for i in range(-1, 5):
+            row_2.append((i, -3))
+        all_rows_mapping.append(list(zip(self.centers_list[5:11], row_2)))
+
+        row_3 = []
+        for i in range(-2, 5):
+            row_3.append((i, -2))
+        all_rows_mapping.append(list(zip(self.centers_list[11:18], row_3)))
+
+        row_4 = []
+        for i in range(-3, 5):
+            row_4.append((i, -1))
+        all_rows_mapping.append(list(zip(self.centers_list[18:26], row_4)))
+
+        row_5 = []
+        for i in range(-4, 5):
+            row_5.append((i, -1))
+        all_rows_mapping.append(list(zip(self.centers_list[26:35], row_5)))
 
 grid_rows = 8
 grid_cols = 8
@@ -255,6 +291,7 @@ if __name__ == '__main__':
 
 
     firstHex = Hexagon(hexagons_centers[8], hexagons_centers)
+    firstHex.rotate_axes_60_degree()
     list1, list2, list3 = firstHex.neighbors_rings()
     print ("count list 1",len(list1))
     print("count list 2", len(list2))
