@@ -8,8 +8,42 @@ import pandas as pd
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 from hexalattice.hexalattice import *
+import collections
+
 # import seaborn as sns
 from scipy.spatial import distance
+
+class Hexagon:
+    Y_OFFSET = 0.86603
+    X_OFFSET = 1
+    def __init__(self, center, centers_list):
+        self.x = float(center[0])
+        self.y = float(center[1])
+        self.centers_list = centers_list
+
+    def neighbors_rings(self):
+        neighbors_list_ring_1 = []
+        neighbors_list_ring_2 = []
+        neighbors_list_ring_3 = []
+        for i in range(1,4):
+            neighbors_temp_list = [[ (self.x + i * Hexagon.X_OFFSET), self.y], [(self.x - i * Hexagon.X_OFFSET), self.y],
+                                   [(self.x + i * (Hexagon.X_OFFSET / 2)),(self.y + i * Hexagon.Y_OFFSET)],
+                                   [(self.x - i * (Hexagon.X_OFFSET / 2)), (self.y + i * Hexagon.Y_OFFSET)],
+                                   [(self.x + i * Hexagon.X_OFFSET / 2), (self.y - i * Hexagon.Y_OFFSET)],
+                                   [(self.x - i * (Hexagon.X_OFFSET / 2)), (self.y - i * Hexagon.Y_OFFSET)]]
+            for neighbor in neighbors_temp_list:
+                if any(all(neighbor[i] == center[i] for i in range(len(neighbor))) for center in self.centers_list):
+                #if
+                #if neighbor in self.centers_list:
+                    if i == 1:
+                        neighbors_list_ring_1.append(neighbor)
+                    if i == 2:
+                        neighbors_list_ring_2.append(neighbor)
+                    if i == 3:
+                        neighbors_list_ring_3.append(neighbor)
+
+
+        return neighbors_list_ring_1, neighbors_list_ring_2, neighbors_list_ring_3
 
 
 grid_rows = 8
@@ -182,7 +216,7 @@ def cluster_groups_to_distances(vectors):
     for section in distances:
         count += len(section[2])
 
-    assert count == 196
+    #assert count == 196
 
     groups = [[distances[i][2], 0] for i in range(0, len(distances))]
     calculate_color(groups)
@@ -200,8 +234,8 @@ def cluster_groups_to_distances(vectors):
 def cluster_groups_to_hexagons(groups, centers_list):
     return list(zip(centers_list.tolist(), groups))
 
-#todo: fix the number of hexagons
-
+def random_vector_to_hexagon(random_vectors_input, centers_list):
+    return list(zip(centers_list.tolist(), random_vectors_input))
 
 def map_each_vector_to_hexagon(vector_as_points, vector_hexagon_centers):
     map_of_vector_to_hexagon = np.column_stack((vector_hexagon_centers, vector_as_points))
@@ -212,12 +246,21 @@ if __name__ == '__main__':
     data, random_vectors, cities_list = get_data('Elec_24.csv')
     data_as_points, rand_vec_as_points = make_as_points(data, random_vectors)
     hexagons_centers = paint()
-    #map_vector_hexagon = map_each_vector_to_hexagon(data_as_points, paint())
-    #print(map_vector_hexagon)
     algo_approximation(data_as_points, rand_vec_as_points)
+    # map each point of a random vector for each hexagon
+    random_vector_to_hexagon = random_vector_to_hexagon(hexagons_centers, rand_vec_as_points)
 
     vector_to_groups = cluster_groups_to_distances(data_as_points)
+    #find_neighborhoods(centers_list=hexagons_centers)
+
+
+    firstHex = Hexagon(hexagons_centers[8], hexagons_centers)
+    list1, list2, list3 = firstHex.neighbors_rings()
+    print ("count list 1",len(list1))
+    print("count list 2", len(list2))
+    print ("count list 3" , len(list3))
+
     color(hexagons_centers, vector_to_groups)
-    group_to_hexagon = cluster_groups_to_hexagons(vector_to_groups, hexagons_centers)
+    # group_to_hexagon = cluster_groups_to_hexagons(vector_to_groups, hexagons_centers)
     plt.show()
 
