@@ -3,15 +3,15 @@ import random
 import sys
 
 import numpy
-import numpy as np
 import pandas as pd
 from sklearn.manifold import TSNE
-import matplotlib.pyplot as plt
 from hexalattice.hexalattice import *
-import collections
 
 # import seaborn as sns
-from scipy.spatial import distance
+
+grid_rows = 8
+grid_cols = 8
+grid_size = grid_rows * grid_cols
 
 class Hexagon:
     Y_OFFSET = 0.86603
@@ -21,37 +21,11 @@ class Hexagon:
         self.y = float(center[1])
         self.centers_list = centers_list
 
-    def neighbors_rings(self):
-        neighbors_list_ring_1 = []
-        neighbors_list_ring_2 = []
-        neighbors_list_ring_3 = []
-        for i in range(1,4):
-            neighbors_temp_list = [[ (self.x + i * Hexagon.X_OFFSET), self.y], [(self.x - i * Hexagon.X_OFFSET), self.y],
-                                   [(self.x + i * (Hexagon.X_OFFSET / 2)),(self.y + i * Hexagon.Y_OFFSET)],
-                                   [(self.x - i * (Hexagon.X_OFFSET / 2)), (self.y + i * Hexagon.Y_OFFSET)],
-                                   [(self.x + i * Hexagon.X_OFFSET / 2), (self.y - i * Hexagon.Y_OFFSET)],
-                                   [(self.x - i * (Hexagon.X_OFFSET / 2)), (self.y - i * Hexagon.Y_OFFSET)]]
-            for neighbor in neighbors_temp_list:
-                if any(all(neighbor[i] == center[i] for i in range(len(neighbor))) for center in self.centers_list):
-                #if
-                #if neighbor in self.centers_list:
-                    if i == 1:
-                        neighbors_list_ring_1.append(neighbor)
-                    if i == 2:
-                        neighbors_list_ring_2.append(neighbor)
-                    if i == 3:
-                        neighbors_list_ring_3.append(neighbor)
-
-
-        return neighbors_list_ring_1, neighbors_list_ring_2, neighbors_list_ring_3
-
-    #def find_neighbors_rings(self):
-
-
-    def rotate_axes_60_degree(self):
+    '''
+    Mapping between values that we know to calculate their ring distance and the real hexagons centers
+    '''
+    def rotate_axis_60_degree(self):
         all_rows_mapping = []
-        row_1 = []
-        #for i in range(0, 5 + i)
         for j in range(0, 5):
             for i in range(0 - j, 5):
                 all_rows_mapping.append((i, -4 + j))
@@ -60,31 +34,39 @@ class Hexagon:
             for m in range(-4, 5 - k):
                 all_rows_mapping.append((m, k))
 
-        map_center_to_rotate_axes = (list(zip(self.centers_list, all_rows_mapping)))
+        map_center_to_rotate_axis = (list(zip(all_rows_mapping, self.centers_list)))
+        return map_center_to_rotate_axis
 
-        row_2 = []
-        for i in range(-1, 5):
-            row_2.append((i, -3))
-        all_rows_mapping.append(list(zip(self.centers_list[5:11], row_2)))
+    @classmethod
+    def sign(cls, number):
+        return 1 - (number <= 0)
 
-        row_3 = []
-        for i in range(-2, 5):
-            row_3.append((i, -2))
-        all_rows_mapping.append(list(zip(self.centers_list[11:18], row_3)))
+    @classmethod
+    def calc_ring_distance(cls, point, another_point):
+        dx = another_point[0] - point[0]
+        dy = another_point[1] - point[1]
 
-        row_4 = []
-        for i in range(-3, 5):
-            row_4.append((i, -1))
-        all_rows_mapping.append(list(zip(self.centers_list[18:26], row_4)))
+        if cls.sign(dx) == cls.sign(dy):
+            return abs(dx + dy)
+        else:
+            return max(abs(dx), abs(dy))
 
-        row_5 = []
-        for i in range(-4, 5):
-            row_5.append((i, -1))
-        all_rows_mapping.append(list(zip(self.centers_list[26:35], row_5)))
+    '''
+    Args:
+        centers_to_rotated_centers_mapping: Mapping from centers to the 60 degree rotated points
+    '''
+    def generate_neighbors_rings(self, centers_to_rotated_centers_mapping):
+        centers_to_rings = {}
+        # (x, y) : {0: [], 1: [], 2: [], 3: [], ...}
+        for center, orig_center in centers_to_rotated_centers_mapping:
+            key = tuple(orig_center.tolist())
+            centers_to_rings[key] = dict(zip(range(1, grid_rows + 1), [[] for _ in range(1, grid_rows + 1)]))
+            for other_center, orig_other_center in centers_to_rotated_centers_mapping:
+                if all(orig_center[i] == orig_other_center[i] for i in range(len(orig_center))):
+                    continue
+                centers_to_rings[key][self.calc_ring_distance(center, other_center)].append(orig_other_center)
+        return centers_to_rings
 
-grid_rows = 8
-grid_cols = 8
-grid_size = grid_rows * grid_cols
 
 def get_data(path):
     # get data from csv file
@@ -103,6 +85,7 @@ def get_data(path):
     return data, random_vectors, cities_list
 
 '''
+Shir's comments
 def draw_reg_poly(surface, color, vertex_count, radius, position, width=0):
     n, r = vertex_count, radius
     x, y = position
@@ -139,7 +122,6 @@ def algo_approximation(data, rand_vectors):
         closest_rand_point_after_approx = closet_rand_point - vector_1*(2/10)*dist
         # we need to know who are the neighborhoods in order to approx them too
         return closest_rand_point_after_approx
-
 
 def make_as_points(input_data, rand_vectors):
     # save only numeric data (without headers)
@@ -205,14 +187,15 @@ def calculate_color(groups):
     a = 5
 
 
-
 def calculate_euclidean_dist(vector1, vector2):
     dist = numpy.linalg.norm(vector2-vector1)
     return dist
 
-
-# This function is for clustering groups.
-# The aim is that the vector in size 196 will be in size 61.
+'''
+This function is for clustering groups.
+The aim is that the vector in size 196 will be in size 61.
+NEED CHANGE -> JUST A DRAFT FOR CLUSTERING TO GROUPS
+'''
 def cluster_groups_to_distances(vectors):
     max_dist = 0
     origin = np.zeros(shape=(1, 2), dtype=float, order='C')
@@ -270,8 +253,12 @@ def cluster_groups_to_distances(vectors):
 def cluster_groups_to_hexagons(groups, centers_list):
     return list(zip(centers_list.tolist(), groups))
 
+'''
+Mapping random vector to specific hexagon (by his center)
+'''
 def random_vector_to_hexagon(random_vectors_input, centers_list):
     return list(zip(centers_list.tolist(), random_vectors_input))
+
 
 def map_each_vector_to_hexagon(vector_as_points, vector_hexagon_centers):
     map_of_vector_to_hexagon = np.column_stack((vector_hexagon_centers, vector_as_points))
@@ -279,25 +266,30 @@ def map_each_vector_to_hexagon(vector_as_points, vector_hexagon_centers):
 
 
 if __name__ == '__main__':
+    # get data
     data, random_vectors, cities_list = get_data('Elec_24.csv')
+
+    # make a rand vector as points, make our data to points
     data_as_points, rand_vec_as_points = make_as_points(data, random_vectors)
+
+    # paint hexagons
     hexagons_centers = paint()
+
     algo_approximation(data_as_points, rand_vec_as_points)
+
     # map each point of a random vector for each hexagon
     random_vector_to_hexagon = random_vector_to_hexagon(hexagons_centers, rand_vec_as_points)
 
+    # NEED CHANGE -> JUST A DRAFT FOR CLUSTERING TO GROUPS
     vector_to_groups = cluster_groups_to_distances(data_as_points)
-    #find_neighborhoods(centers_list=hexagons_centers)
 
-
+    # create an instance of specific hexagon for test
     firstHex = Hexagon(hexagons_centers[8], hexagons_centers)
-    firstHex.rotate_axes_60_degree()
-    list1, list2, list3 = firstHex.neighbors_rings()
-    print ("count list 1",len(list1))
-    print("count list 2", len(list2))
-    print ("count list 3" , len(list3))
+    firstHex.rotate_axis_60_degree()
+    # calculate the neighbors of all of the hexagons
+    firstHex.generate_neighbors_rings(firstHex.rotate_axis_60_degree())
 
+    # color the hexagons
     color(hexagons_centers, vector_to_groups)
-    # group_to_hexagon = cluster_groups_to_hexagons(vector_to_groups, hexagons_centers)
     plt.show()
 
