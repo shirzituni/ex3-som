@@ -1,3 +1,4 @@
+import csv
 import math
 import random
 import pandas as pd
@@ -7,7 +8,7 @@ from hexalattice.hexalattice import *
 grid_rows = 8
 grid_cols = 8
 grid_size = grid_rows * grid_cols
-
+FILE_NAME = 'Elec_24.csv'
 
 class Hexagon:
     Y_OFFSET = 0.86603
@@ -70,7 +71,7 @@ class Hexagon:
 def get_data(path):
     # get data from csv file
     data = pd.read_csv(filepath_or_buffer=path, header=None).values
-    data2 = pd.read_csv('Elec_24.csv')
+    data2 = pd.read_csv(FILE_NAME)
     cities_list = data2['Municipality'].tolist()
     # convert str to int
     data[1:, 1:] = data[1:, 1:].astype(np.uint8)
@@ -208,10 +209,17 @@ def calc_color_for_hex(hex_to_cities, all_data):
 
     plt.show()
 
+def shuffle_csv():
+    file = open(FILE_NAME)
+    csv_reader = csv.reader(file)
+    next(csv_reader)
+    shuffle_list = file.readlines()
+    random.shuffle(shuffle_list)
+    return shuffle_list
 
 def main():
     # get data
-    data, random_vectors, cities_list = get_data('Elec_24.csv')
+    data, random_vectors, cities_list = get_data(FILE_NAME)
 
     # make a rand vector as points, make our data to points
     data_as_points, rand_vec_as_points = make_as_points(data, random_vectors)
@@ -234,7 +242,7 @@ def main():
 
     # map city to hexagon
     hex_to_cities = map_city_to_hexagon(data_as_points, hexagon_to_rand_vector)
-
+    print(hex_to_cities)
     # calculate economic for group
     # calc_color_for_hex(hex_to_cities, data)
 
@@ -244,7 +252,7 @@ def main():
 """ -------- MAIN -------- """
 grades = []
 all_data = []
-for ii in range(10):
+for run in range(10):
     run_grade = 0
     hex_to_cities, rand_vector_to_hex, points_data, data = main()
     all_data.append((hex_to_cities, data))
