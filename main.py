@@ -209,15 +209,25 @@ def calc_color_for_hex(hex_to_cities, all_data):
 
     plt.show()
 
-def shuffle_csv():
-    file = open(FILE_NAME)
-    csv_reader = csv.reader(file)
-    next(csv_reader)
+
+def shuffle_csv(filename):
+    file = open(filename)
     shuffle_list = file.readlines()
-    random.shuffle(shuffle_list)
+    files_names = ["file1.csv", "file2.csv", "file3.csv", "file4.csv", "file5.csv",
+                   "file6.csv", "file7.csv", "file8.csv", "file9.csv"]
+    fields = shuffle_list[0]
+    shuffle_list = shuffle_list[1:]
+
+    for file in files_names:
+        random.shuffle(shuffle_list)
+        with open(file, 'w') as f:
+            f.write(fields)
+            f.write(''.join(shuffle_list))
     return shuffle_list
 
+
 def main():
+
     # get data
     data, random_vectors, cities_list = get_data(FILE_NAME)
 
@@ -252,6 +262,7 @@ def main():
 """ -------- MAIN -------- """
 grades = []
 all_data = []
+
 for run in range(10):
     run_grade = 0
     hex_to_cities, rand_vector_to_hex, points_data, data = main()
@@ -267,6 +278,18 @@ for run in range(10):
         run_grade += total_dist
     grades.append(run_grade)
 
+
 index_of_best_run = np.argmin(grades)
+'''
+Graph creation
+
+shuffle_csv(FILE_NAME)
+iter_num = [0, 1, 2, 3, 4, 5, 6, 7, 8]
+result_of_each_file = [47.0039, 46.9733, 43.7814, 45.3665, 45.40726, 46.5509, 47.0327, 43.5043, 44.9258]
+plt.xlabel('iteration number')
+plt.ylabel('file best result')
+plt.plot(iter_num, result_of_each_file)
+'''
+
 print(f"Run number {index_of_best_run} with grade {min(grades)} was the best run")
 calc_color_for_hex(all_data[index_of_best_run][0], all_data[index_of_best_run][1])
