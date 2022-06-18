@@ -4,8 +4,6 @@ import pandas as pd
 from sklearn.manifold import TSNE
 from hexalattice.hexalattice import *
 
-# import seaborn as sns
-
 grid_rows = 8
 grid_cols = 8
 grid_size = grid_rows * grid_cols
@@ -85,42 +83,43 @@ def get_data(path):
             for x in range(61)]
     return data, random_vectors, cities_list
 
+
 # find the approximate random vector to input_vector
 def algo_approximation(input_points, hexagon_to_randvec, neighbors_data):
     # 10 iterations
-    for iteration in range(10):
-        for input_data in input_points:
-            # find the distance between the input data to the random vectors
-            difference = [math.dist(input_data, list(hex_to_vec.values())[0]) for hex_to_vec in hexagon_to_randvec]
+    for input_data in input_points:
+        # find the distance between the input data to the random vectors
+        difference = [math.dist(input_data, list(hex_to_vec.values())[0]) for hex_to_vec in hexagon_to_randvec]
 
-            # save the nearset point to the input point
-            index_of_nearest_rand_vector = np.argmin(difference)
-            nearest_hexagon_value = list(hexagon_to_randvec[index_of_nearest_rand_vector].keys())[0]
-            nearest_rand_point = list(hexagon_to_randvec[index_of_nearest_rand_vector].values())[0]
+        # save the nearset point to the input point
+        index_of_nearest_rand_vector = np.argmin(difference)
+        nearest_hexagon_value = list(hexagon_to_randvec[index_of_nearest_rand_vector].keys())[0]
+        nearest_rand_point = list(hexagon_to_randvec[index_of_nearest_rand_vector].values())[0]
 
-            # approximate input_vector to the "nearest" vector
-            vector_1 = nearest_rand_point - input_data
-            vector_1 = vector_1 / np.linalg.norm(vector_1)
+        # approximate input_vector to the "nearest" vector
+        vector_1 = nearest_rand_point - input_data
+        vector_1 = vector_1 / np.linalg.norm(vector_1)
 
-            # move the random vector to the point
-            dist = np.min(difference)
-            hexagon_to_randvec[index_of_nearest_rand_vector][nearest_hexagon_value] = \
-                nearest_rand_point - vector_1 * (3 / 10) * dist
+        # move the random vector to the point
+        dist = np.min(difference)
+        hexagon_to_randvec[index_of_nearest_rand_vector][nearest_hexagon_value] = \
+            nearest_rand_point - vector_1 * (3 / 10) * dist
 
-            # approx neighbors of nearest_rand_point
-            for circle_rank, neighbors_set in neighbors_data[nearest_hexagon_value].items():
-                for neighbor in neighbors_set:
-                    find_helper = [0] * 61
-                    for i, cur_dict in enumerate(hexagon_to_randvec):
-                        if list(cur_dict.keys())[0] == tuple(neighbor):
-                            find_helper[i] = 1
-                    index = np.argmax(find_helper)
-                    vec_from_rand = list(hexagon_to_randvec[index].values())[0]
-                    vector_1 = vec_from_rand - input_data
-                    vector_1 = vector_1 / np.linalg.norm(vector_1)
-                    dist = np.min(difference)
-                    if circle_rank <= 2:
-                        hexagon_to_randvec[index][tuple(neighbor)] = vec_from_rand - vector_1 * (3 - circle_rank / 10) * dist
+        # approx neighbors of nearest_rand_point
+        for circle_rank, neighbors_set in neighbors_data[nearest_hexagon_value].items():
+            for neighbor in neighbors_set:
+                find_helper = [0] * 61
+                for i, cur_dict in enumerate(hexagon_to_randvec):
+                    if list(cur_dict.keys())[0] == tuple(neighbor):
+                        find_helper[i] = 1
+                index = np.argmax(find_helper)
+                vec_from_rand = list(hexagon_to_randvec[index].values())[0]
+                vector_1 = vec_from_rand - input_data
+                vector_1 = vector_1 / np.linalg.norm(vector_1)
+                dist = np.min(difference)
+                if circle_rank <= 2:
+                    hexagon_to_randvec[index][tuple(neighbor)] = vec_from_rand - vector_1 * (
+                            3 - circle_rank / 10) * dist
     return hexagon_to_randvec
 
 
@@ -156,13 +155,15 @@ def color(hex_centers, groups):
                                       plotting_gap=0.05,
                                       rotate_deg=0)
 
+
 '''
 Mapping random vector to specific hexagon (by his center)
 '''
 
+
 def hexagon_to_random_vector_func(centers_list, random_vectors_input):
     return [{tuple(center): rand_vec} for center, rand_vec in zip(centers_list, random_vectors_input)]
-    # return list(zip(random_vectors_input, centers_list.tolist()))
+
 
 def map_city_to_hexagon(input_points, hexagon_to_rand_vector):
     hexagon_to_cities = {}
@@ -171,14 +172,10 @@ def map_city_to_hexagon(input_points, hexagon_to_rand_vector):
     for city_index, input_data in enumerate(input_points):
         # find the distance between the input data to the random vectors
         difference = [math.dist(input_data, list(hex_to_vec.values())[0]) for hex_to_vec in hexagon_to_rand_vector]
-
         # save the nearset point to the input point
         index_of_nearest_rand_vector = np.argmin(difference)
         nearest_hexagon_value = list(hexagon_to_rand_vector[index_of_nearest_rand_vector].keys())[0]
-        # try:
         hexagon_to_cities[nearest_hexagon_value].append(city_index)
-        # except:
-        #     hexagon_to_cities[nearest_hexagon_value] = [city_index]
     return hexagon_to_cities
 
 
@@ -199,7 +196,7 @@ def calc_color_for_hex(hex_to_cities, all_data):
     colors = np.zeros([grid_size, 3])
     for i in range(0, grid_size - 3):
         if z[i] != 0:
-            colors[i] = np.array([0.2, z[i],2*z[i]])  # RGB 0-1
+            colors[i] = np.array([0.2, z[i], 2 * z[i]])  # RGB 0-1
         else:
             colors[i] = np.array([0.8, 0.8, 0.8])  # RGB 0-1
     plot_single_lattice_custom_colors(x, y,
@@ -210,7 +207,6 @@ def calc_color_for_hex(hex_to_cities, all_data):
                                       rotate_deg=0)
 
     plt.show()
-    return 0
 
 
 def main():
@@ -240,6 +236,29 @@ def main():
     hex_to_cities = map_city_to_hexagon(data_as_points, hexagon_to_rand_vector)
 
     # calculate economic for group
-    hex_colors = calc_color_for_hex(hex_to_cities, data)
+    # calc_color_for_hex(hex_to_cities, data)
 
-main()
+    return hex_to_cities, hexagon_to_rand_vector, data_as_points, data
+
+
+""" -------- MAIN -------- """
+grades = []
+all_data = []
+for ii in range(10):
+    run_grade = 0
+    hex_to_cities, rand_vector_to_hex, points_data, data = main()
+    all_data.append((hex_to_cities, data))
+    for index, hexagon in enumerate(hex_to_cities):
+        cities_indices = hex_to_cities[hexagon]
+        hexagon_vec = list(rand_vector_to_hex[index].values())[0]
+        total = 0
+        for city_index in cities_indices:
+            dist = math.dist(points_data[city_index], hexagon_vec)
+            total += dist
+        total_dist = total / len(cities_indices) if total != 0 else 0
+        run_grade += total_dist
+    grades.append(run_grade)
+
+index_of_best_run = np.argmin(grades)
+print(f"Run number {index_of_best_run} with grade {min(grades)} was the best run")
+calc_color_for_hex(all_data[index_of_best_run][0], all_data[index_of_best_run][1])
